@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
-import ollama
+import openai
 import ast
 import json
 import re
 import io
 
-         
+# Set your OpenAI API key
+openai.api_key = 'AIzaSyBYLXhvqwNsxNzMAMcxBlnAulcFOhNQhEk'
 
 ### Functions: START
 def extract_and_convert_list(text):
@@ -70,16 +71,6 @@ def validate_and_convert_salary_json(json_input):
         return None, False  # Return None and False if parsing fails or keys are missing
 
 
-# Example usage:
-# valid_json = '{"salary_comparison": {"philippines": "1000", "united_states": "5000"}}'
-# invalid_json = '{"salary_comparison": {"philippines": "not a number", "united_states": 5000}}'
-# 
-# result, is_valid = validate_and_convert_salary_json(valid_json)
-# print(f"Valid: {is_valid}, Result: {result}")
-# 
-# result, is_valid = validate_and_convert_salary_json(invalid_json)
-# print(f"Valid: {is_valid}, Result: {result}")
-
 ### Functions: END
 
 
@@ -130,11 +121,14 @@ if st.button("Analyze"):
             {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
             {"role": "user", "content": company_needs_description}
         ]
-        result = ollama.chat(model="llama3", messages=chat_log)
-        response = result["message"]["content"]
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=chat_log
+        )
+        response_text = response["choices"][0]["message"]["content"]
         
         # Update the session state with the new response
-        st.session_state.main_response = response
+        st.session_state.main_response = response_text
 
         #Get the job roles from the initial response
         prompt = f"""
@@ -148,12 +142,15 @@ if st.button("Analyze"):
         chat_log = [
             {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
             {"role": "user", "content": company_needs_description},
-            {"role": "assistant", "content": response},
+            {"role": "assistant", "content": response_text},
             {"role": "user", "content": prompt}
         ]
 
-        result = ollama.chat(model="llama3", messages=chat_log)
-        job_list_response = result["message"]["content"]
+        result = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=chat_log
+        )
+        job_list_response = result["choices"][0]["message"]["content"]
         job_list = extract_and_convert_list(job_list_response)
         print(job_list) #for debugging purposes
         st.session_state['job_list'] = job_list
@@ -195,8 +192,11 @@ if st.session_state['job_list']:
                 {"role": "user", "content": prompt}
             ]
 
-            result = ollama.chat(model="llama3", messages=chat_log)
-            job_salary_comparison = result["message"]["content"]
+            result = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=chat_log
+            )
+            job_salary_comparison = result["choices"][0]["message"]["content"]
 
             print(f"Job: {job}")
             print(job_salary_comparison)
@@ -301,6 +301,3 @@ if st.session_state["job_list_salary"]:
         st.divider()
         st.write(f"* If you are to hire all of your employees from the Philippines, the following is your expected savings.")
         st.write(f"Overall Savings: {expected_savings} USD")
-
-
-
