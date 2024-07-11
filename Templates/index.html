@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Builder</title>
+</head>
+<body>
+    <h1>Team Builder</h1>
+    <section id="about-us">
+        <h2>About Us</h2>
+        <p id="about-content"></p>
+    </section>
+    <section id="job-roles">
+        <h2>Job Roles</h2>
+        <div id="roles-list"></div>
+    </section>
+    <section id="calculation">
+        <h2>Calculation</h2>
+        <div id="results"></div>
+    </section>
+    <script>
+        async function loadAbout() {
+            const response = await fetch('/about');
+            const data = await response.json();
+            document.getElementById('about-content').innerText = data.about;
+        }
+
+        async function loadJobRoles() {
+            const response = await fetch('/job_roles');
+            const data = await response.json();
+            const rolesList = document.getElementById('roles-list');
+            for (const [role, salaries] of Object.entries(data)) {
+                const roleDiv = document.createElement('div');
+                roleDiv.innerHTML = `<input type="checkbox" value="${role}"> ${role} - USA: $${salaries.USA}, PH: ₱${salaries.PH}`;
+                rolesList.appendChild(roleDiv);
+            }
+        }
+
+        async function calculate() {
+            const checkboxes = document.querySelectorAll('#roles-list input[type="checkbox"]:checked');
+            const selectedRoles = Array.from(checkboxes).map(checkbox => checkbox.value);
+            const response = await fetch('/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ roles: selectedRoles }),
+            });
+            const data = await response.json();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `Total Cost in USA: $${data.total_cost_usa}<br>
+                                    Total Cost in PH: ₱${data.total_cost_ph}<br>
+                                    Savings: $${data.savings}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAbout();
+            loadJobRoles();
+        });
+
+        document.addEventListener('change', () => {
+            calculate();
+        });
+    </script>
+</body>
+</html>
