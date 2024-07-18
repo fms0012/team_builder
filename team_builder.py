@@ -171,7 +171,7 @@ def team_builder_page():
                     {"role": "user", "content": company_needs_description}
                 ]
                 try:
-                    result = ollama.chat(model="gemma2", messages=chat_log)
+                    result = ollama.chat(model="llama3", messages=chat_log)
                     response = result["message"]["content"]
                     
                     st.session_state.main_response = response
@@ -191,7 +191,7 @@ def team_builder_page():
                             {"role": "user", "content": prompt}
                         ]
         
-                        result = ollama.chat(model="gemma2", messages=chat_log)
+                        result = ollama.chat(model="llama3", messages=chat_log)
                         job_list_response = result["message"]["content"]
                         job_list = extract_and_convert_list(job_list_response)
                         if job_list:
@@ -234,7 +234,7 @@ def team_builder_page():
                         {"role": "user", "content": full_description}
                     ]
                     try:
-                        result = ollama.chat(model="gemma2", messages=chat_log)
+                        result = ollama.chat(model="llama3", messages=chat_log)
                         response = result["message"]["content"]
                         
                         st.session_state.main_response = response
@@ -254,7 +254,7 @@ def team_builder_page():
                                 {"role": "user", "content": prompt}
                             ]
         
-                            result = ollama.chat(model="gemma2", messages=chat_log)
+                            result = ollama.chat(model="llama3", messages=chat_log)
                             job_list_response = result["message"]["content"]
                             job_list = extract_and_convert_list(job_list_response)
                             if job_list:
@@ -323,7 +323,7 @@ def team_builder_page():
                     {"role": "user", "content": prompt}
                 ]
     
-                result = ollama.chat(model="gemma2", messages=chat_log)
+                result = ollama.chat(model="llama3", messages=chat_log)
                 job_salary_comparison = result["message"]["content"]
     
                 salary_comparison_json, salary_comparison_parsed_successfully = extract_and_parse_json(job_salary_comparison)
