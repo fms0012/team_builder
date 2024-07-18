@@ -8,6 +8,7 @@ import io
 from PIL import Image
 from streamlit_lottie import st_lottie
 import requests
+from bs4 import BeautifulSoup
 
 # Function to load Lottie animations
 def load_lottie_url(url: str):
@@ -19,7 +20,6 @@ def load_lottie_url(url: str):
 analyzing_animation = load_lottie_url("https://lottie.host/cbc610bc-931b-4127-bc6c-810a94b95e34/8zxOH3LLWV.json")
 welcome_animation = load_lottie_url("https://lottie.host/0bd09814-d2ae-4f38-a301-4b1c01d1d778/OWezBSJvFE.json")
 congratulations_animation = load_lottie_url("https://lottie.host/768b23c5-2167-45ed-afb0-42f3fc4d7c0c/F40M6pnGsn.json")
-
 
 def team_builder_page():
     def extract_and_convert_list(text):
@@ -73,18 +73,26 @@ def team_builder_page():
             return False
         return True
 
-    def simulate_job_relevance_classification(job_list):
+    def simulate_job_relevance_classification(job_list, company_needs_description):
         if not job_list:
             return [], []
-        irrelevant_roles = ["Web Developer", "Accountant"]  # Example of irrelevant roles
-        relevant_roles = [role for role in job_list if role not in irrelevant_roles]
-        irrelevant_roles = [role for role in job_list if role in irrelevant_roles]
+        
+        relevant_roles = [role for role in job_list if role.lower() not in company_needs_description.lower()]
+        irrelevant_roles = [role for role in job_list if role.lower() in company_needs_description.lower()]
+
         return relevant_roles, irrelevant_roles
 
     def input_is_out_of_context(input_text):
         irrelevant_keywords = ["unrelated", "out of context", "irrelevant"]
         for phrase in irrelevant_keywords:
             if phrase.lower() in input_text.lower():
+                return True
+        return False
+
+    def is_relevant_to_jobs_and_business(input_text):
+        relevant_keywords = ["job", "hire", "business", "project", "team", "staff", "company", "role", "position", "expertise"]
+        for keyword in relevant_keywords:
+            if keyword.lower() in input_text.lower():
                 return True
         return False
 
@@ -96,11 +104,9 @@ def team_builder_page():
         st.image("Connext_Logo.png", width=400)
     with col3:
         st.write(' ')
-        
        
     st_lottie(welcome_animation, height=200, key="welcome_animation")
 
-    
     st.write("""
     <div style="text-align: center;">
         <h1>Connext Team Builder</h1>
@@ -128,7 +134,6 @@ def team_builder_page():
     </div>
     """, unsafe_allow_html=True)
 
-    
     company_needs_description = st.text_area("Describe your company's challenges or staffing needs:", height=150)
     
     if 'main_response' not in st.session_state:
@@ -153,7 +158,7 @@ def team_builder_page():
         st.session_state.show_job_list = False
     
     if st.button("Analyze"):
-        if not check_input_specificity(company_needs_description) or input_is_out_of_context(company_needs_description):
+        if not check_input_specificity(company_needs_description) or input_is_out_of_context(company_needs_description) or not is_relevant_to_jobs_and_business(company_needs_description):
             st.warning("Your input is not applicable. Please provide more specific details.")
             st.session_state['job_list'] = []
             st.session_state.show_job_list = False
@@ -165,7 +170,7 @@ def team_builder_page():
                     {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                     {"role": "user", "content": company_needs_description}
                 ]
-                result = ollama.chat(model="llama3", messages=chat_log)
+                result = ollama.chat(model="gemma2", messages=chat_log)
                 response = result["message"]["content"]
                 
                 st.session_state.main_response = response
@@ -185,12 +190,12 @@ def team_builder_page():
                         {"role": "user", "content": prompt}
                     ]
     
-                    result = ollama.chat(model="llama3", messages=chat_log)
+                    result = ollama.chat(model="gemma2", messages=chat_log)
                     job_list_response = result["message"]["content"]
                     job_list = extract_and_convert_list(job_list_response)
                     if job_list:
                         st.session_state['job_list'] = job_list
-                        st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list)
+                        st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, company_needs_description)
                         st.session_state.show_job_list = True
                     else:
                         st.warning("Failed to generate job roles. Please provide more specific details.")
@@ -210,7 +215,7 @@ def team_builder_page():
         st.session_state.additional_info = additional_info
     
         if st.button("Submit Additional Info"):
-            if additional_info.lower() in ["n/a", "not sure", "don't know", "general"]:
+            if additional_info.lower() in ["n/a", "not sure", "don't know", "general"] or not is_relevant_to_jobs_and_business(additional_info):
                 st.warning("Your additional info is not applicable. Please provide more specific details.")
                 st.session_state['job_list'] = []
                 st.session_state.show_job_list = False
@@ -222,7 +227,7 @@ def team_builder_page():
                         {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                         {"role": "user", "content": full_description}
                     ]
-                    result = ollama.chat(model="llama3", messages=chat_log)
+                    result = ollama.chat(model="gemma2", messages=chat_log)
                     response = result["message"]["content"]
                     
                     st.session_state.main_response = response
@@ -242,12 +247,12 @@ def team_builder_page():
                             {"role": "user", "content": prompt}
                         ]
     
-                        result = ollama.chat(model="llama3", messages=chat_log)
+                        result = ollama.chat(model="gemma2", messages=chat_log)
                         job_list_response = result["message"]["content"]
                         job_list = extract_and_convert_list(job_list_response)
                         if job_list:
                             st.session_state['job_list'] = job_list
-                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list)
+                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, full_description)
                             st.session_state.show_job_list = True
                         else:
                             st.warning("Failed to generate job roles. Please provide more specific details.")
@@ -269,7 +274,7 @@ def team_builder_page():
     
         st.markdown("#### Irrelevant Job Roles")
         irrelevant_roles_str = ', '.join(st.session_state.irrelevant_job_list)
-        irrelevant_roles_input = st.text_area("Irrelevant job roles:", value=irrelevant_roles_str, height=100, disabled=True)
+        irrelevant_roles_input = st.text_area("Add or edit irrelevant job roles (comma-separated):", value=irrelevant_roles_str, height=100)
         st.session_state.irrelevant_job_list = [role.strip() for role in irrelevant_roles_input.split(',')]
     
         if st.button("Proceed"):
@@ -306,7 +311,7 @@ def team_builder_page():
                     {"role": "user", "content": prompt}
                 ]
     
-                result = ollama.chat(model="llama3", messages=chat_log)
+                result = ollama.chat(model="gemma2", messages=chat_log)
                 job_salary_comparison = result["message"]["content"]
     
                 salary_comparison_json, salary_comparison_parsed_successfully = extract_and_parse_json(job_salary_comparison)
@@ -363,7 +368,8 @@ def team_builder_page():
                 st.session_state['job_list_salary'][i]["philippines_total_cost"] = st.session_state['job_list_salary'][i]["no of employees"] * st.session_state['job_list_salary'][i]["salary_comparison"]["philippines"]
                 st.session_state['job_list_salary'][i]["united_states_total_cost"] = st.session_state['job_list_salary'][i]["no of employees"] * st.session_state['job_list_salary'][i]["salary_comparison"]["united_states"]
                 st.session_state['job_list_salary'][i]["total_savings"] = st.session_state['job_list_salary'][i]["united_states_total_cost"] - st.session_state['job_list_salary'][i]["philippines_total_cost"]
-    
+                st.session_state['job_list_salary'][i]["connext_total_cost"] = st.session_state['job_list_salary'][i]["philippines_total_cost"]
+        
             df = pd.DataFrame(st.session_state['job_list_salary'])
             df = pd.concat([df.drop(['salary_comparison'], axis=1), df['salary_comparison'].apply(pd.Series)], axis=1)
             st.dataframe(df)
@@ -380,11 +386,12 @@ def team_builder_page():
             philippines_overall_cost = df["philippines_total_cost"].sum()
             united_states_overall_cost = df["united_states_total_cost"].sum()
             expected_savings = df["total_savings"].sum()
+            connext_total_cost = df["philippines_total_cost"].sum()  # Calculate the total cost when hiring through Connext Global Solutions
     
             st.write(f"Philippines Overall Cost: {philippines_overall_cost} USD")
             st.write(f"United States Overall Cost: {united_states_overall_cost} USD")
             st.divider()
-            st.write(f"* If you hire all of your employees through Connext Global Solutions, the following is your expected savings.")
+            st.write(f"* If you hire all of your employees in the Philippines, the following is your expected savings.")
             st.write(f"Overall Savings: {expected_savings} USD")
             
             st.divider()
@@ -392,7 +399,7 @@ def team_builder_page():
             # Refined job role list with cost difference and savings information
             st.markdown("### Job Role List with Cost Difference and Savings Information when hiring through Connext Global Solutions")
 
-            refined_df = df[["job_role", "philippines_total_cost", "united_states_total_cost", "total_savings"]]
+            refined_df = df[["job_role", "philippines_total_cost", "united_states_total_cost","connext_total_cost", "total_savings"]]
             st.write(refined_df)
 
             buffer = io.BytesIO()
@@ -411,6 +418,7 @@ def team_builder_page():
 
             st.write(f"**Total Cost if Hiring in the Philippines:** ${total_philippines_cost:,.2f}")
             st.write(f"**Total Cost if Hiring in the United States:** ${total_united_states_cost:,.2f}")
+            st.write(f"**Total Cost if Hiring through Connext Global Solutions:** ${connext_total_cost:,.2f}")
             st.write(f"**Total Savings if Hiring through Connext Global Solutions:** ${total_savings:,.2f}")
 
             st.markdown("""
