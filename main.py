@@ -23,19 +23,18 @@ with st.sidebar:
     st.markdown("""
         <style>
             .stRadio > label {
-                font-size: 18px;
+                font-size: 28px;
                 color: #2E2E2E;
                 font-weight: bold;
             }
             .stRadio > div {
                 background-color: #f0f0f0;
-                padding: 10px;
+                padding: 20px;
                 border-radius: 10px;
                 border: 2px solid #2E2E2E;
             }
             .stRadio input:checked + div {
-                background-color: #4CAF50;
-                color: white;
+                color: black;
                 font-weight: bold;
             }
         </style>
