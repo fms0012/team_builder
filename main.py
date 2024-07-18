@@ -9,7 +9,7 @@ st.set_page_config(page_title="Connext Global Solutions", page_icon="🌐", layo
 
 # Create a custom sidebar with a navigation menu
 with st.sidebar:
-    st.markdown("<h2 style='color: #2E2E2E;'>Main Menu</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Main Menu</h2>", unsafe_allow_html=True)
     
     menu = {
         "Home": "🏠 Home",
@@ -20,25 +20,6 @@ with st.sidebar:
     
     page = st.radio("", list(menu.keys()), format_func=lambda x: menu[x])
 
-    st.markdown("""
-        <style>
-            .stRadio > label {
-                font-size: 28px;
-                color: #2E2E2E;
-                font-weight: bold;
-            }
-            .stRadio > div {
-                background-color: #f0f0f0;
-                padding: 20px;
-                border-radius: 10px;
-                border: 2px solid #2E2E2E;
-            }
-            .stRadio input:checked + div {
-                color: black;
-                font-weight: bold;
-            }
-        </style>
-    """, unsafe_allow_html=True)
 
 # Page Navigation
 if page == "Home":

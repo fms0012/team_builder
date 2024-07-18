@@ -8,7 +8,7 @@ import io
 from PIL import Image
 from streamlit_lottie import st_lottie
 import requests
-from bs4 import BeautifulSoup
+import httpx
 
 # Function to load Lottie animations
 def load_lottie_url(url: str):
@@ -170,40 +170,46 @@ def team_builder_page():
                     {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                     {"role": "user", "content": company_needs_description}
                 ]
-                result = ollama.chat(model="gemma2", messages=chat_log)
-                response = result["message"]["content"]
-                
-                st.session_state.main_response = response
-    
-                if "job roles" in response.lower():
-                    prompt = """
-                        Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
-                        It should just be a list of strings of the job roles.
-    
-                        Example:
-                        ["Web Developer", "Accountant", "3D graphic artist"]
-                    """
-                    chat_log = [
-                        {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
-                        {"role": "user", "content": company_needs_description},
-                        {"role": "assistant", "content": response},
-                        {"role": "user", "content": prompt}
-                    ]
-    
+                try:
                     result = ollama.chat(model="gemma2", messages=chat_log)
-                    job_list_response = result["message"]["content"]
-                    job_list = extract_and_convert_list(job_list_response)
-                    if job_list:
-                        st.session_state['job_list'] = job_list
-                        st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, company_needs_description)
-                        st.session_state.show_job_list = True
+                    response = result["message"]["content"]
+                    
+                    st.session_state.main_response = response
+    
+                    if "job roles" in response.lower():
+                        prompt = """
+                            Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
+                            It should just be a list of strings of the job roles.
+        
+                            Example:
+                            ["Web Developer", "Accountant", "3D graphic artist"]
+                        """
+                        chat_log = [
+                            {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
+                            {"role": "user", "content": company_needs_description},
+                            {"role": "assistant", "content": response},
+                            {"role": "user", "content": prompt}
+                        ]
+        
+                        result = ollama.chat(model="gemma2", messages=chat_log)
+                        job_list_response = result["message"]["content"]
+                        job_list = extract_and_convert_list(job_list_response)
+                        if job_list:
+                            st.session_state['job_list'] = job_list
+                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, company_needs_description)
+                            st.session_state.show_job_list = True
+                        else:
+                            st.warning("Failed to generate job roles. Please provide more specific details.")
+                            st.session_state.show_job_list = False
                     else:
-                        st.warning("Failed to generate job roles. Please provide more specific details.")
+                        st.warning("Your input is out of context. Please provide more specific details.")
+                        st.session_state['job_list'] = []
                         st.session_state.show_job_list = False
-                else:
-                    st.warning("Your input is out of context. Please provide more specific details.")
-                    st.session_state['job_list'] = []
-                    st.session_state.show_job_list = False
+    
+                except httpx.ConnectError:
+                    st.error("Connection error: Unable to connect to the API. Please check your network connection.")
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
     
                 st.experimental_rerun()
     
@@ -227,40 +233,46 @@ def team_builder_page():
                         {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                         {"role": "user", "content": full_description}
                     ]
-                    result = ollama.chat(model="gemma2", messages=chat_log)
-                    response = result["message"]["content"]
-                    
-                    st.session_state.main_response = response
-    
-                    if "job roles" in response.lower():
-                        prompt = """
-                            Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
-                            It should just be a list of strings of the job roles.
-    
-                            Example:
-                            ["Web Developer", "Accountant", "3D graphic artist"]
-                        """
-                        chat_log = [
-                            {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
-                            {"role": "user", "content": full_description},
-                            {"role": "assistant", "content": response},
-                            {"role": "user", "content": prompt}
-                        ]
-    
+                    try:
                         result = ollama.chat(model="gemma2", messages=chat_log)
-                        job_list_response = result["message"]["content"]
-                        job_list = extract_and_convert_list(job_list_response)
-                        if job_list:
-                            st.session_state['job_list'] = job_list
-                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, full_description)
-                            st.session_state.show_job_list = True
+                        response = result["message"]["content"]
+                        
+                        st.session_state.main_response = response
+        
+                        if "job roles" in response.lower():
+                            prompt = """
+                                Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
+                                It should just be a list of strings of the job roles.
+        
+                                Example:
+                                ["Web Developer", "Accountant", "3D graphic artist"]
+                            """
+                            chat_log = [
+                                {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
+                                {"role": "user", "content": full_description},
+                                {"role": "assistant", "content": response},
+                                {"role": "user", "content": prompt}
+                            ]
+        
+                            result = ollama.chat(model="gemma2", messages=chat_log)
+                            job_list_response = result["message"]["content"]
+                            job_list = extract_and_convert_list(job_list_response)
+                            if job_list:
+                                st.session_state['job_list'] = job_list
+                                st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, full_description)
+                                st.session_state.show_job_list = True
+                            else:
+                                st.warning("Failed to generate job roles. Please provide more specific details.")
+                                st.session_state.show_job_list = False
                         else:
-                            st.warning("Failed to generate job roles. Please provide more specific details.")
+                            st.warning("Your additional info is out of context. Please provide more specific details.")
+                            st.session_state['job_list'] = []
                             st.session_state.show_job_list = False
-                    else:
-                        st.warning("Your additional info is out of context. Please provide more specific details.")
-                        st.session_state['job_list'] = []
-                        st.session_state.show_job_list = False
+    
+                    except httpx.ConnectError:
+                        st.error("Connection error: Unable to connect to the API. Please check your network connection.")
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
     
                 st.experimental_rerun()
     
@@ -425,4 +437,3 @@ def team_builder_page():
             *By hiring through Connext Global Solutions, you can achieve significant cost savings while maintaining high-quality talent and operational control.*
             """)
             st_lottie(congratulations_animation, height=200, key="congratulations_animation")
-
