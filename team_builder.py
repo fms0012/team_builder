@@ -8,7 +8,6 @@ import io
 from PIL import Image
 from streamlit_lottie import st_lottie
 import requests
-from bs4 import BeautifulSoup
 
 # Function to load Lottie animations
 def load_lottie_url(url: str):
@@ -134,7 +133,7 @@ def team_builder_page():
     </div>
     """, unsafe_allow_html=True)
 
-    company_needs_description = st.text_area("Describe your company's challenges or staffing needs:", height=150)
+    company_needs_description = st.text_area("Enter or Paste the Company's URL/About page to generate job roles:", height=150)
     
     if 'main_response' not in st.session_state:
         st.session_state.main_response = ""
@@ -211,7 +210,7 @@ def team_builder_page():
         with st.expander("View Response"):
             st.write(st.session_state.main_response)
         
-        additional_info = st.text_area("Please add in anything more you like, otherwise just enter NA:", height=100)
+        additional_info = st.text_area("Please add in anything more you like, otherwise just leave it blank:", height=100)
         st.session_state.additional_info = additional_info
     
         if st.button("Submit Additional Info"):
@@ -425,4 +424,3 @@ def team_builder_page():
             *By hiring through Connext Global Solutions, you can achieve significant cost savings while maintaining high-quality talent and operational control.*
             """)
             st_lottie(congratulations_animation, height=200, key="congratulations_animation")
-
