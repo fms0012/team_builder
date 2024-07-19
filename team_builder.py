@@ -8,7 +8,7 @@ import io
 from PIL import Image
 from streamlit_lottie import st_lottie
 import requests
-import httpx
+from bs4 import BeautifulSoup
 
 # Function to load Lottie animations
 def load_lottie_url(url: str):
@@ -21,81 +21,81 @@ analyzing_animation = load_lottie_url("https://lottie.host/cbc610bc-931b-4127-bc
 welcome_animation = load_lottie_url("https://lottie.host/0bd09814-d2ae-4f38-a301-4b1c01d1d778/OWezBSJvFE.json")
 congratulations_animation = load_lottie_url("https://lottie.host/768b23c5-2167-45ed-afb0-42f3fc4d7c0c/F40M6pnGsn.json")
 
-def team_builder_page():
-    def extract_and_convert_list(text):
-        list_match = re.search(r'\[.*?\]', text, re.DOTALL)
-        if list_match:
-            list_string = list_match.group()
-            try:
-                python_list = ast.literal_eval(list_string)
-                if isinstance(python_list, list):
-                    return python_list
-                else:
-                    return None
-            except (SyntaxError, ValueError):
+def extract_and_convert_list(text):
+    list_match = re.search(r'\[.*?\]', text, re.DOTALL)
+    if list_match:
+        list_string = list_match.group()
+        try:
+            python_list = ast.literal_eval(list_string)
+            if isinstance(python_list, list):
+                return python_list
+            else:
                 return None
-        else:
+        except (SyntaxError, ValueError):
             return None
+    else:
+        return None
 
-    def extract_and_parse_json(text):
-        start_index = text.find('{')
-        end_index = text.rfind('}')
-        if start_index == -1 or end_index == -1 or end_index < start_index:
-            return None, False
-        json_str = text[start_index:end_index + 1]
-        try:
-            parsed_json = json.loads(json_str)
-            return parsed_json, True
-        except json.JSONDecodeError:
-            return None, False
+def extract_and_parse_json(text):
+    start_index = text.find('{')
+    end_index = text.rfind('}')
+    if start_index == -1 or end_index == -1 or end_index < start_index:
+        return None, False
+    json_str = text[start_index:end_index + 1]
+    try:
+        parsed_json = json.loads(json_str)
+        return parsed_json, True
+    except json.JSONDecodeError:
+        return None, False
 
-    def validate_and_convert_salary_json(json_input):
-        def is_valid_salary_comparison(data):
-            return (
-                "salary_comparison" in data and
-                "philippines" in data["salary_comparison"] and
-                "united_states" in data["salary_comparison"]
-            )
-        if isinstance(json_input, dict):
-            valid = is_valid_salary_comparison(json_input)
-            return json_input, valid
-        try:
-            data = json.loads(json_input)
-            valid = is_valid_salary_comparison(data)
-            valid = data["salary_comparison"]["philippines"] < 10000 and data["salary_comparison"]["united_states"] < 10000
-            return data, valid
-        except (json.JSONDecodeError, TypeError):
-            return None, False
+def validate_and_convert_salary_json(json_input):
+    def is_valid_salary_comparison(data):
+        return (
+            "salary_comparison" in data and
+            "philippines" in data["salary_comparison"] and
+            "united_states" in data["salary_comparison"]
+        )
+    if isinstance(json_input, dict):
+        valid = is_valid_salary_comparison(json_input)
+        return json_input, valid
+    try:
+        data = json.loads(json_input)
+        valid = is_valid_salary_comparison(data)
+        valid = data["salary_comparison"]["philippines"] < 10000 and data["salary_comparison"]["united_states"] < 10000
+        return data, valid
+    except (json.JSONDecodeError, TypeError):
+        return None, False
 
-    def check_input_specificity(input_text):
-        generic_phrases = ["general", "NA", "n/a", "not sure", "don't know", "do you", "are you", "you", "Are there"]
-        if any(phrase.lower() in input_text.lower() for phrase in generic_phrases):
-            return False
-        return True
-
-    def simulate_job_relevance_classification(job_list, company_needs_description):
-        if not job_list:
-            return [], []
-        
-        relevant_roles = [role for role in job_list if role.lower() not in company_needs_description.lower()]
-        irrelevant_roles = [role for role in job_list if role.lower() in company_needs_description.lower()]
-
-        return relevant_roles, irrelevant_roles
-
-    def input_is_out_of_context(input_text):
-        irrelevant_keywords = ["unrelated", "out of context", "irrelevant"]
-        for phrase in irrelevant_keywords:
-            if phrase.lower() in input_text.lower():
-                return True
+def check_input_specificity(input_text):
+    generic_phrases = ["general","n/a", "not sure", "don't know", "do you", "are you", "you", "Are there"]
+    if any(phrase.lower() in input_text.lower() for phrase in generic_phrases):
         return False
+    return True
 
-    def is_relevant_to_jobs_and_business(input_text):
-        relevant_keywords = ["job", "hire", "business", "project", "team", "staff", "company", "role", "position", "expertise"]
-        for keyword in relevant_keywords:
-            if keyword.lower() in input_text.lower():
-                return True
-        return False
+def simulate_job_relevance_classification(job_list, company_needs_description):
+    if not job_list:
+        return [], []
+    
+    relevant_roles = [role for role in job_list if role.lower() not in company_needs_description.lower()]
+    irrelevant_roles = [role for role in job_list if role.lower() in company_needs_description.lower()]
 
+    return relevant_roles, irrelevant_roles
+
+def input_is_out_of_context(input_text):
+    irrelevant_keywords = ["unrelated", "out of context", "irrelevant"]
+    for phrase in irrelevant_keywords:
+        if phrase.lower() in input_text.lower():
+            return True
+    return False
+
+def is_relevant_to_jobs_and_business(input_text):
+    relevant_keywords = ["job", "hire", "business", "project", "team", "staff", "company", "role", "position", "expertise"]
+    for keyword in relevant_keywords:
+        if keyword.lower() in input_text.lower():
+            return True
+    return False
+
+def team_builder_page():
     # Header and introduction
     col1, col2, col3 = st.columns([2,1.3,2])
     with col1:
@@ -170,46 +170,40 @@ def team_builder_page():
                     {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                     {"role": "user", "content": company_needs_description}
                 ]
-                try:
+                result = ollama.chat(model="llama3", messages=chat_log)
+                response = result["message"]["content"]
+                
+                st.session_state.main_response = response
+    
+                if "job roles" in response.lower():
+                    prompt = """
+                        Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
+                        It should just be a list of strings of the job roles.
+    
+                        Example:
+                        ["Web Developer", "Accountant", "3D graphic artist"]
+                    """
+                    chat_log = [
+                        {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
+                        {"role": "user", "content": company_needs_description},
+                        {"role": "assistant", "content": response},
+                        {"role": "user", "content": prompt}
+                    ]
+    
                     result = ollama.chat(model="llama3", messages=chat_log)
-                    response = result["message"]["content"]
-                    
-                    st.session_state.main_response = response
-    
-                    if "job roles" in response.lower():
-                        prompt = """
-                            Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
-                            It should just be a list of strings of the job roles.
-        
-                            Example:
-                            ["Web Developer", "Accountant", "3D graphic artist"]
-                        """
-                        chat_log = [
-                            {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
-                            {"role": "user", "content": company_needs_description},
-                            {"role": "assistant", "content": response},
-                            {"role": "user", "content": prompt}
-                        ]
-        
-                        result = ollama.chat(model="llama3", messages=chat_log)
-                        job_list_response = result["message"]["content"]
-                        job_list = extract_and_convert_list(job_list_response)
-                        if job_list:
-                            st.session_state['job_list'] = job_list
-                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, company_needs_description)
-                            st.session_state.show_job_list = True
-                        else:
-                            st.warning("Failed to generate job roles. Please provide more specific details.")
-                            st.session_state.show_job_list = False
+                    job_list_response = result["message"]["content"]
+                    job_list = extract_and_convert_list(job_list_response)
+                    if job_list:
+                        st.session_state['job_list'] = job_list
+                        st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, company_needs_description)
+                        st.session_state.show_job_list = True
                     else:
-                        st.warning("Your input is out of context. Please provide more specific details.")
-                        st.session_state['job_list'] = []
+                        st.warning("Failed to generate job roles. Please provide more specific details.")
                         st.session_state.show_job_list = False
-    
-                except httpx.ConnectError:
-                    st.error("Connection error: Unable to connect to the API. Please check your network connection.")
-                except Exception as e:
-                    st.error(f"An error occurred: {e}")
+                else:
+                    st.warning("Your input is out of context. Please provide more specific details.")
+                    st.session_state['job_list'] = []
+                    st.session_state.show_job_list = False
     
                 st.experimental_rerun()
     
@@ -233,46 +227,40 @@ def team_builder_page():
                         {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                         {"role": "user", "content": full_description}
                     ]
-                    try:
-                        result = ollama.chat(model="llama3", messages=chat_log)
-                        response = result["message"]["content"]
-                        
-                        st.session_state.main_response = response
-        
-                        if "job roles" in response.lower():
-                            prompt = """
-                                Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
-                                It should just be a list of strings of the job roles.
-        
-                                Example:
-                                ["Web Developer", "Accountant", "3D graphic artist"]
-                            """
-                            chat_log = [
-                                {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
-                                {"role": "user", "content": full_description},
-                                {"role": "assistant", "content": response},
-                                {"role": "user", "content": prompt}
-                            ]
-        
-                            result = ollama.chat(model="llama3", messages=chat_log)
-                            job_list_response = result["message"]["content"]
-                            job_list = extract_and_convert_list(job_list_response)
-                            if job_list:
-                                st.session_state['job_list'] = job_list
-                                st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, full_description)
-                                st.session_state.show_job_list = True
-                            else:
-                                st.warning("Failed to generate job roles. Please provide more specific details.")
-                                st.session_state.show_job_list = False
-                        else:
-                            st.warning("Your additional info is out of context. Please provide more specific details.")
-                            st.session_state['job_list'] = []
-                            st.session_state.show_job_list = False
+                    result = ollama.chat(model="llama3", messages=chat_log)
+                    response = result["message"]["content"]
+                    
+                    st.session_state.main_response = response
     
-                    except httpx.ConnectError:
-                        st.error("Connection error: Unable to connect to the API. Please check your network connection.")
-                    except Exception as e:
-                        st.error(f"An error occurred: {e}")
+                    if "job roles" in response.lower():
+                        prompt = """
+                            Based on the previous job roles analysis, can you give me the list of the job roles from the previous response and format it into a python list.
+                            It should just be a list of strings of the job roles.
+    
+                            Example:
+                            ["Web Developer", "Accountant", "3D graphic artist"]
+                        """
+                        chat_log = [
+                            {"role": "system", "content": "You are an HR manager which extracts the job roles based on a user/company needs analysis."},
+                            {"role": "user", "content": full_description},
+                            {"role": "assistant", "content": response},
+                            {"role": "user", "content": prompt}
+                        ]
+    
+                        result = ollama.chat(model="llama3", messages=chat_log)
+                        job_list_response = result["message"]["content"]
+                        job_list = extract_and_convert_list(job_list_response)
+                        if job_list:
+                            st.session_state['job_list'] = job_list
+                            st.session_state.relevant_job_list, st.session_state.irrelevant_job_list = simulate_job_relevance_classification(job_list, full_description)
+                            st.session_state.show_job_list = True
+                        else:
+                            st.warning("Failed to generate job roles. Please provide more specific details.")
+                            st.session_state.show_job_list = False
+                    else:
+                        st.warning("Your additional info is out of context. Please provide more specific details.")
+                        st.session_state['job_list'] = []
+                        st.session_state.show_job_list = False
     
                 st.experimental_rerun()
     
@@ -437,3 +425,4 @@ def team_builder_page():
             *By hiring through Connext Global Solutions, you can achieve significant cost savings while maintaining high-quality talent and operational control.*
             """)
             st_lottie(congratulations_animation, height=200, key="congratulations_animation")
+
