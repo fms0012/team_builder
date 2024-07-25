@@ -16,7 +16,6 @@ def load_lottie_url(url: str):
         return None
     return r.json()
 
-analyzing_animation = load_lottie_url("https://lottie.host/cbc610bc-931b-4127-bc6c-810a94b95e34/8zxOH3LLWV.json")
 welcome_animation = load_lottie_url("https://lottie.host/0bd09814-d2ae-4f38-a301-4b1c01d1d778/OWezBSJvFE.json")
 congratulations_animation = load_lottie_url("https://lottie.host/768b23c5-2167-45ed-afb0-42f3fc4d7c0c/F40M6pnGsn.json")
 
@@ -94,6 +93,21 @@ def is_relevant_to_jobs_and_business(input_text):
             return True
     return False
 
+def analyze_url_content(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            text = response.text
+            about_us_start = text.lower().find('about us', 'our company')
+            if about_us_start != -1:
+                about_us_end = text.lower().find('</div>', about_us_start)
+                about_us_content = text[about_us_start:about_us_end]
+                return about_us_content
+        else:
+            return None
+    except Exception as e:
+        return None
+
 def team_builder_page():
     # Header and introduction
     col1, col2, col3 = st.columns([2,1.3,2])
@@ -133,7 +147,7 @@ def team_builder_page():
     </div>
     """, unsafe_allow_html=True)
 
-    company_needs_description = st.text_area("Enter or Paste the Company's URL/About page to generate job roles:", height=150)
+    company_needs_description = st.text_area("Enter Description or Paste the Company's URL/About us page to generate job roles:", height=150)
     
     if 'main_response' not in st.session_state:
         st.session_state.main_response = ""
@@ -157,14 +171,21 @@ def team_builder_page():
         st.session_state.show_job_list = False
     
     if st.button("Analyze"):
-        if not check_input_specificity(company_needs_description) or input_is_out_of_context(company_needs_description) or not is_relevant_to_jobs_and_business(company_needs_description):
+        is_url_provided = company_needs_description.startswith("http")
+        if is_url_provided:
+            about_us_content = analyze_url_content(company_needs_description)
+            if about_us_content:
+                company_needs_description = about_us_content
+            else:
+                st.session_state['job_list'] = []
+                st.session_state.show_job_list = False
+        
+        if not is_url_provided and (not check_input_specificity(company_needs_description) or input_is_out_of_context(company_needs_description) or not is_relevant_to_jobs_and_business(company_needs_description)):
             st.warning("Your input is not applicable. Please provide more specific details.")
             st.session_state['job_list'] = []
             st.session_state.show_job_list = False
         else:
             with st.spinner("Analyzing your needs..."):
-                # Display analyzing animation
-                st_lottie(analyzing_animation, height=200, key="analyzing_animation")
                 chat_log = [
                     {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
                     {"role": "user", "content": company_needs_description}
@@ -220,7 +241,6 @@ def team_builder_page():
                 st.session_state.show_job_list = False
             else:
                 with st.spinner("Processing additional info..."):
-                    st_lottie(analyzing_animation, height=200, key="processing_animation")
                     full_description = f"{company_needs_description}\n\nAdditional Info: {additional_info}"
                     chat_log = [
                         {"role": "system", "content": "You are tasked to analyze the job role needs of a company based on the description/queries from the users/company."},
@@ -424,3 +444,6 @@ def team_builder_page():
             *By hiring through Connext Global Solutions, you can achieve significant cost savings while maintaining high-quality talent and operational control.*
             """)
             st_lottie(congratulations_animation, height=200, key="congratulations_animation")
+
+
+
