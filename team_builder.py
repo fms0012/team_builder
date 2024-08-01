@@ -13,6 +13,10 @@ import hashlib
 
 load_dotenv()
 
+headers = {
+    "authorization": st.secrets["auth_key"],
+    "content-type": "application/json"
+}
 # Configure Google Generative AI
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
 
