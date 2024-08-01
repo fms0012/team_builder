@@ -1,8 +1,10 @@
 streamlit
 pandas
-ollama
 requests
 streamlit-lottie
+python-dotenv
+google.generativeai
+
 
 aiohttp==3.9.5
 aiosignal==1.3.1
