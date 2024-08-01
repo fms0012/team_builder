@@ -238,7 +238,7 @@ if st.button("Analyze"):
                 st.warning("Failed to generate job roles. Please provide more specific details.")
                 st.session_state.show_job_list = False
 
-        st.experimental_rerun()
+
 
 if st.session_state.main_response:
     with st.expander("View Response"):
@@ -286,8 +286,6 @@ if st.session_state.main_response:
                 else:
                     st.warning("Failed to generate job roles. Please provide more specific details.")
                     st.session_state.show_job_list = False
-
-            st.experimental_rerun()
 
 if st.session_state.show_job_list and st.session_state['job_list']:
     st.markdown("### Job Roles You May Need")
