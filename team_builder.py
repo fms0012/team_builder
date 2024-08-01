@@ -7,32 +7,21 @@ import re
 import io
 from streamlit_lottie import st_lottie
 import requests
-import os
-from dotenv import load_dotenv
 import hashlib
 
-load_dotenv()
-
-headers = {
-    "authorization": st.secrets["auth_key"],
-    "content-type": "application/json"
-}
-# Configure Google Generative AI
-genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+# Configure Google Generative AI using secrets
+genai.configure(api_key=st.secrets["api_keys"]["GOOGLE_API_KEY"])
 
 generation_config = {
   "temperature": 1.5,
   "top_p": 0.95,
   "top_k": 64,
   "max_output_tokens": 8192,
-  "response_mime_type": "text/plain",
+  "response_mime_type": "application/json"
 }
 
 # Using `response_mime_type` requires one of the Gemini 1.5 Pro or 1.5 Flash models
-model = genai.GenerativeModel('gemini-1.5-flash',
-                              # Set the `response_mime_type` to output JSON
-                              generation_config={"response_mime_type": "application/json"})
-generation_config=generation_config,
+model = genai.GenerativeModel('gemini-1.5-flash', generation_config=generation_config)
 
 # Function to load Lottie animations
 def load_lottie_url(url: str):
@@ -450,3 +439,5 @@ def team_builder_page():
             *By hiring through Connext Global Solutions, you can achieve significant cost savings while maintaining high-quality talent and operational control.*
             """)
             st_lottie(congratulations_animation, height=200, key="congratulations_animation")
+
+
