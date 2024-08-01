@@ -14,7 +14,7 @@ import hashlib
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 generation_config = {
-  "temperature": 1.5,
+  "temperature": 1,
   "top_p": 0.95,
   "top_k": 64,
   "max_output_tokens": 8192,
